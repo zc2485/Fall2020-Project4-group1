@@ -1,0 +1,97 @@
+---
+title: "IPW, P3 Propensity Score Estimation"
+author: "Henan Xu"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+## 1. Setup
+```{r message=FALSE, warning=FALSE}
+library(glmnet)
+```
+
+
+## 2. Load Data
+```{r}
+data_low <- read.csv("../data/lowDim_dataset.csv")
+data_high <- read.csv("../data/highDim_dataset.csv")
+
+# Low Dimension
+treatment_low <- data_low$A
+y_low <- data_low$Y
+x_low <- data_low[, -c(1,2)]
+
+# High Dimension
+treatment_high <- data_high$A
+y_high <- data_high$Y
+x_high <- data_high[, -c(1,2)]
+```
+
+
+## 3. Calculate Propensity Score with L2 Ridge regression
+### 3.1 Low Dimension
+```{r}
+set.seed(5243)
+glm_low <- cv.glmnet(as.matrix(x_low), treatment_low, family = "binomial", alpha = 0)
+
+ps_low <- predict(glm_low$glmnet.fit, 
+                    s = glm_low$lambda.min, 
+                    newx = as.matrix(x_low),
+                    type = "response")
+data_low$ps <- ps_low
+```
+
+### 3.2 High Dimension
+```{r}
+set.seed(5243)
+glm_high <- cv.glmnet(as.matrix(x_high), treatment_high, family = "binomial", alpha = 0)
+
+ps_high <- predict(glm_high$glmnet.fit, 
+                    s = glm_high$lambda.min, 
+                    newx = as.matrix(x_high),
+                    type = "response")
+data_high$ps <- ps_high
+```
+
+## 4. Inverse Propensity Weighting
+
+### 4.1 Calculating inverse propensity weights for low dimension
+```{r}
+data_low$inv_prop_weight <- ifelse(data_low$A == 1, 1/data_low$ps,
+                                   1/(1 - data_low$ps))
+```
+
+### 4.2 Calculating inverse propensity weights for high dimension
+```{r}
+data_high$inv_prop_weight <- ifelse(data_high$A == 1,
+                                    1/data_high$ps, 
+                                    1/(1 - data_high$ps))
+```
+
+## 5. ATE calculated with Inverse Propensity Weighting
+
+### 5.1 Calculating ATE for low dimension
+```{r}
+data_low_treatment <- data_low[which(data_low$A == 1), ]
+data_low_control <- data_low[which(data_low$A == 0), ]
+ATE_low <- (sum(data_low_treatment$inv_prop_weight * data_low_treatment$Y) -
+  sum(data_low_control$inv_prop_weight * data_low_control$Y)) /
+  dim(data_low)[1]
+ATE_low
+```
+
+### 5.2 Calculating ATE for high dimension
+```{r}
+data_high_treatment <- data_high[which(data_high$A == 1), ]
+data_high_control <- data_high[which(data_high$A == 0), ]
+ATE_high <- (sum(data_high_treatment$inv_prop_weight * data_high_treatment$Y) -
+  sum(data_high_control$inv_prop_weight * data_high_control$Y)) /
+  dim(data_high)[1]
+ATE_high
+```
+
+
+
+
