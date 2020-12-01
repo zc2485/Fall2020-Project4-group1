@@ -1,0 +1,87 @@
+---
+title: "A3 Algorithm + P3 Propensity Score Estimation"
+author: "Yiran Lin"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+## Set up
+```{r message=FALSE, warning=FALSE}
+library(glmnet)
+setwd("./")
+```
+
+## Load Data
+```{r}
+low <- read.csv("lowDim_dataset.csv")
+high <- read.csv("highDim_dataset.csv")
+
+# Low Dimension
+lowA <- low$A
+lowY <- low$Y
+lowData <- low[,-c(1,2)]
+
+# High Dimension
+highA <- high$A
+highY <- high$Y
+highData <- high[, -c(1,2)]
+```
+
+## Calculate Propensity Score with L2 Ridge regression
+```{r}
+# Low Dimension
+set.seed(0)
+glm_low <- cv.glmnet(as.matrix(lowData), lowA, family = "binomial", alpha = 0)
+
+psLow <- predict(glm_low$glmnet.fit, 
+                    s = glm_low$lambda.min, 
+                    newx = as.matrix(lowData),
+                    type = "response")
+low$ps <- psLow
+```
+
+```{r}
+# High Dimension
+set.seed(0)
+glm_high <- cv.glmnet(as.matrix(highData), highA, family = "binomial", alpha = 0)
+
+psHigh <- predict(glm_high$glmnet.fit, 
+                    s = glm_high$lambda.min, 
+                    newx = as.matrix(highData),
+                    type = "response")
+high$ps <- psHigh
+```
+
+## ATE calculated with Doubly Robust Estimation
+Doubly Robust Estimation combines the predicted outcome from linear regression with propensity score to estimate the causal effect. Without combining, these two methods can be easily biased. Doubly Robust Estimation reduces the likelihood to be biased since only one of the 2 models need to be correctly specified to obtain unbiased estimator.
+```{r message=FALSE, warning=FALSE}
+start <- Sys.time()
+# Low Dimension
+set.seed(0)
+low1 <- low[which(low$A=='1'),]
+low0 <- low[which(low$A=='0'),]
+lr_low1 <- glm(formula=Y~ .,data = low1)
+lr_low0 <- glm(formula=Y~ .,data = low0)
+low$m1 <- predict(lr_low1,low[,-c(1)])
+low$m0 <- predict(lr_low0,low[,-c(1)])
+# Calculate
+ATE_low <- sum((low$A*low$Y-(low$A-low$ps)*low$m1)/low$ps)/dim(low)[1]-sum(((1-low$A)*low$Y+(low$A-low$ps)*low$m0)/(1-low$ps))/dim(low)[1]
+ATE_low
+```
+The first chunk of this code is for building linear regression models based on output(Y) and features(low1) for different treatment(A) values. The following part uses all the value we obtain before to calculate ATE.
+```{r message=FALSE, warning=FALSE}
+# High Dimension
+set.seed(0)
+high1 <- high[which(high$A=='1'),]
+high0 <- high[which(high$A=='0'),]
+lr_high1 <- glm(formula=Y~ .,data = high1)
+lr_high0 <- glm(formula=Y~ .,data = high0)
+high$m1 <- predict(lr_high1,high[,-c(1)])
+high$m0 <- predict(lr_high0,high[,-c(1)])
+# Calculate
+ATE_high <- sum((high$A*high$Y-(high$A-high$ps)*high$m1)/high$ps)/dim(high)[1]-sum(((1-high$A)*high$Y+(high$A-high$ps)*high$m0)/(1-high$ps))/dim(high)[1]
+ATE_high
+paste("Running time for DRE in seconds is:",difftime(Sys.time(),start))
+```
+The steps to calculate the ATE for high dimension data is exactly the same. The first part is for building linear regression models to predict outcomes and the second part is to calculate ATE.
