@@ -7,6 +7,14 @@ output:
     df_print: paged
 ---
 
+## 0. Introduction of Inverse Propensity Weighting
+
+Propensity score weighting is an alternative to propensity score matching in casual inference. Its idea, in the context of this project, is to directly use propensity scores as inverse weights in calculating the ATE. 
+
+Individuals from the treatment group are weighted as $\frac{1}{\hat e_i}$, whereas individuals from the control group are weighted as $\frac{1}{1-\hat e_i}$, where $\hat e_i$ is the estimated propensity score for individual $i$.
+
+Such an approach addresses some of the disadvantages inherent to propensity score matching. First, it may be impossible to pair each treatment to a different control, or even to any control. Secondly, grouping may include too few controls at high propensities to yield reliable group mean differences. Lastly, groups can be so coarse that the controls and treatments in a group are not well-matched.
+
 ## 1. Setup
 ```{r message=FALSE, warning=FALSE}
 library(glmnet)
@@ -59,39 +67,59 @@ data_high$ps <- ps_high
 
 ### 4.1 Calculating inverse propensity weights for low dimension
 ```{r}
+start_time_wt_low <- Sys.time()
 data_low$inv_prop_weight <- ifelse(data_low$A == 1, 1/data_low$ps,
                                    1/(1 - data_low$ps))
+end_time_wt_low <- Sys.time()
+tm_wt_low <- end_time_wt_low - start_time_wt_low
 ```
 
 ### 4.2 Calculating inverse propensity weights for high dimension
 ```{r}
+start_time_wt_high <- Sys.time()
 data_high$inv_prop_weight <- ifelse(data_high$A == 1,
                                     1/data_high$ps, 
                                     1/(1 - data_high$ps))
+end_time_wt_high <- Sys.time()
+tm_wt_high <- end_time_wt_high - start_time_wt_high
 ```
 
 ## 5. ATE calculated with Inverse Propensity Weighting
 
 ### 5.1 Calculating ATE for low dimension
 ```{r}
+start_time_ate_low <- Sys.time()
 data_low_treatment <- data_low[which(data_low$A == 1), ]
 data_low_control <- data_low[which(data_low$A == 0), ]
 ATE_low <- (sum(data_low_treatment$inv_prop_weight * data_low_treatment$Y) -
   sum(data_low_control$inv_prop_weight * data_low_control$Y)) /
   dim(data_low)[1]
-ATE_low
+cat("The ATE calculated by IPW for low dimensional data is", ATE_low, ".")
+end_time_ate_low <- Sys.time()
+tm_ate_low <- end_time_ate_low - start_time_ate_low
 ```
 
 ### 5.2 Calculating ATE for high dimension
 ```{r}
+start_time_ate_high <- Sys.time()
 data_high_treatment <- data_high[which(data_high$A == 1), ]
 data_high_control <- data_high[which(data_high$A == 0), ]
 ATE_high <- (sum(data_high_treatment$inv_prop_weight * data_high_treatment$Y) -
   sum(data_high_control$inv_prop_weight * data_high_control$Y)) /
   dim(data_high)[1]
-ATE_high
+cat("The ATE calculated by IPW for high dimensional data is", ATE_high, ".")
+end_time_ate_high <- Sys.time()
+tm_ate_high <- end_time_ate_high - start_time_ate_high
 ```
 
+## 6. Running time of the algorithm
+
+```{r}
+tm_low <- tm_wt_low + tm_ate_low
+tm_high <- tm_wt_high + tm_ate_high
+cat("The running time of IPW for low dimensional data is", tm_low, "s.\n")
+cat("The running time of IPW for high dimensional data is", tm_high, "s.")
+```
 
 
 
