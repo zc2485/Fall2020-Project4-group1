@@ -15,7 +15,7 @@ Term: Fall 2020
 + Project summary: Causal inference refers to the process of drawing a conclusion about a causal connection based on the conditions of the occurrence of an effect. Our group calculate ATE using Propensity Matching,  Inverse Propensity Weighting and Doubly Robust Estimation along with L2 propensity score estimations.
 	
 **Contribution statement**: All team members contributed equally in all stages of this project. All team members approve our work presented in this GitHub repository including this contributions statement.
-+ Zihan Chen implemented matching part of Propensity Matching algorithm,  
++ Zihan Chen implemented matching part of Propensity Matching algorithm, organized the codes in main.
 + Depeng Kong calculated propensity score based on L2 penalized logistic regression for every model.
 + Yiran Lin studied and implemented Doubly Robust Estimation algorithm with PS based on L2 penalized logistic regression, wrote the description for DRE algorithm.
 + Wannian Lou
