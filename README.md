@@ -5,7 +5,7 @@
 Term: Fall 2020
 
 + Team 1
-+ Projec title: Causal Inference 
++ Projec title: Causal Inference Algorithms Evaluation
 + Team members
 	+ Zihan Chen
 	+ Depeng Kong
