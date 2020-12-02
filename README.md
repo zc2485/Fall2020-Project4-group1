@@ -16,7 +16,7 @@ Term: Fall 2020
 	
 **Contribution statement**: All team members contributed equally in all stages of this project. All team members approve our work presented in this GitHub repository including this contributions statement.
 
-+ Zihan Chen implemented matching part of Propensity Matching algorithm, organized the codes in main, prepared presentation material and presented in class.
++ Zihan Chen implemented matching part of Propensity Matching algorithm, implemented bootstrap in IPW and DRE to generate plots. Organized the codes in main, prepared presentation material and presented in class.
 + Depeng Kong calculated propensity score based on L2 penalized logistic regression for every model, produced skeleton code for Propensity Matching, and finalized main file formatting.
 + Yiran Lin studied and implemented Doubly Robust Estimation algorithm with PS based on L2 penalized logistic regression, wrote the description for DRE algorithm.
 + Wannian Lou cooperated with Henan Xu to finish the IPW algorithm.
