@@ -21,19 +21,21 @@ The statistics of the three algorithms implemented on low-Dim and high-Dim datas
 
 | **Comparison Standard** | **Propensity Score Matching** | **Inverse Propensity Weighting** | **Doubly Robust Estimation** |
 |:-------------|:-------:|:-------:|:-------:|
-| Complexity                  | $O(n^2)$ |   $O(n)$ |  $O(n)$  |
-| Low-Dim Running Time        | 13.03 sec| 20.40 sec| 21.01 sec|
-| Low-Dim ATE Mean            |  2.67    | 1.97     | 2.56     | 
-| Low-Dim ATE Standard Error  | 0.39     | 0.038    | 0.0013   |
-| High-Dim Running Time       | 1.76 min | 4.29 min | 4.45 min |
-| High-Dim ATE Mean           | -3.44    | -2.34    | -2.96    |
-| High-Dim ATE Standard Error | 0.076    | 0.027    | 0.004    |
+| Complexity                          | $O(n^2)$ |   $O(n)$ |  $O(n)$  |
+| Low-Dim Running Time (1 iteration)  | 3.26 sec | 0.20 sec | 0.21 sec |
+| Low-Dim Running Time Total          | 13.03 sec| 20.4 sec | 21.01 sec|
+| Low-Dim ATE Mean                    |  2.67    | 1.97     | 2.56     | 
+| Low-Dim ATE Standard Error          | 0.39     | 0.038    | 0.0013   |
+| High-Dim Running Time (1 iteration) | 26.4 sec | 2.57 sec | 2.67 sec |
+| High-Dim Running Time Total         | 1.76 min | 4.29 min | 4.45 min |
+| High-Dim ATE Mean                   | -3.44    | -2.34    | -2.96    |
+| High-Dim ATE Standard Error         | 0.076    | 0.027    | 0.004    |
 
 : Side-by-side Summary Table
 
 <!-- ![summary](../figs/summary.png) -->
 
-To summarize our findings, Propensity Score Matching is unstable and sensitive to threshold choosing, which in turn determine the total number of matching pairs. Also, it has the highest complexity cost.
+To summarize our findings, Propensity Score Matching is unstable and sensitive to threshold choosing, which in turn determine the total number of matching pairs. Also, it has the highest complexity cost, as well as running time.
 
 Inverse Propensity Weighting is a better algorithm. With no need to compute the pair-wise distance, it runs fast, but may be biased.
 
