@@ -25,7 +25,7 @@ setwd("./")
 
 
 ## 2. Load Data
-```{r}
+```{r, warning=FALSE}
 ldim <- read.csv("../data/lowDim_dataset.csv")
 hdim <- read.csv("../data/highDim_dataset.csv")
 
@@ -43,7 +43,7 @@ hx <- hdim[, -c(1,2)]
 
 ## 3. Calculate Propensity Score with L2 Ridge regression for Propensity Matching
 
-```{r}
+```{r, warning=FALSE}
 seed <- c(0,2,3,5)
 start_time <- Sys.time()
 
@@ -74,7 +74,7 @@ p_score_list <- lapply(seed,p_score)
 ## 4. Propensity Matching
 
 ### 4.1 Distance calculated
-```{r}
+```{r, warning=FALSE}
 dist_mat <- function(li){
   glm1.fit <- li$l
   glm2.fit <- li$h
@@ -114,7 +114,7 @@ tm
 
 ### 4.2 Propensity Score Marching Function
 
-```{r}
+```{r, warning=FALSE}
 cal_neighbour <- function(index,df,thresh,y,A){
   dt_vec <- df[index,]
   ind_vec <- which(dt_vec<thresh)
@@ -133,7 +133,7 @@ cal_neighbour <- function(index,df,thresh,y,A){
 
 ### 4.3 Matching Low-Dim
 
-```{r}
+```{r, warning=FALSE}
 seq = 10:200/10000
 
 start_time <- Sys.time()
@@ -183,7 +183,7 @@ tm
 
 ### 4.4 Matching High-Dim
 
-```{r}
+```{r, warning=FALSE}
 start_time <- Sys.time()
 
 seq = 10:200/10000
@@ -236,7 +236,7 @@ tm
 
 ### 4.5 Plotting Part for Low-Dim
 
-```{r}
+```{r, figures-side, fig.show="hold", out.width="25%", warning=FALSE}
 
 for (i in 1:4){
   ATE_low <- low_list[[i]]$ate
@@ -265,7 +265,7 @@ for (i in 1:4){
 
 ### 4.6 Plotting Part for High-Dim
 
-```{r}
+```{r, fig.show="hold", out.width="25%", warning=FALSE}
 for (i in ind_mat){
   ATE_high <- high_list[[i]]$ate
   pairs_high <- high_list[[i]]$pair
@@ -305,7 +305,7 @@ Individuals from the treatment group are weighted as $\frac{1}{\hat e_i}$, where
 
 Such an approach addresses some of the disadvantages inherent to propensity score matching. First, it may be impossible to pair each treatment to a different control, or even to any control. Secondly, grouping may include too few controls at high propensities to yield reliable group mean differences. Lastly, groups can be so coarse that the controls and treatments in a group are not well-matched.
 
-```{r}
+```{r, warning=FALSE}
 data_low <- ldim
 data_high <- hdim
 
@@ -322,7 +322,7 @@ x_high <- data_high[, -c(1,2)]
 
 ### 5.2 Calculating ATE for Low-Dim with bootstrap
 
-```{r}
+```{r, warning=FALSE}
 start_time <- Sys.time()
 
 set.seed(0)
@@ -358,7 +358,7 @@ for (seednum in seed){
 
 ### 5.3 ATE Hist Plot for Low-Dim
 
-```{r}
+```{r, warning=FALSE, fig.width=4.7, fig.height=3.3}
 plot_low_ipw <- data.frame(x=1:length(seed),ATE=ate_ipw_vec)
 
 g_low <- ggplot(plot_low_ipw)+
@@ -383,7 +383,7 @@ tm
 
 ### 5.4 Calculating ATE for High-Dim with bootstrap
 
-```{r}
+```{r, warning=FALSE}
 start_time <- Sys.time()
 
 set.seed(0)
@@ -419,7 +419,7 @@ for (seednum in seed){
 
 ### 5.5 ATE Hist Plot for High-Dim
 
-```{r}
+```{r, warning=FALSE, fig.width=4.7, fig.height=3.3}
 plot_low_ipw <- data.frame(x=1:length(seed),ATE=ate_ipw_vec)
 
 g_high <- ggplot(plot_low_ipw)+
@@ -431,6 +431,7 @@ g_high <- ggplot(plot_low_ipw)+
   )
 print(g_high)
 
+end_time <- Sys.time()
 
 cat("mean ATE = ",mean(ate_ipw_vec))
 cat("std ATE = ",sd(ate_ipw_vec))
@@ -446,7 +447,7 @@ tm
 
 Doubly Robust Estimation combines the predicted outcome from linear regression with propensity score to estimate the causal effect. Without combining, these two methods can be easily biased. Doubly Robust Estimation reduces the likelihood to be biased since only one of the 2 models need to be correctly specified to obtain unbiased estimator.
 
-```{r}
+```{r, warning=FALSE}
 low <- read.csv("../data/lowDim_dataset.csv")
 high <- read.csv("../data/highDim_dataset.csv")
 # Low Dimension
@@ -501,9 +502,10 @@ The first chunk of this code is for building linear regression models based on o
 
 ### 6.3 ATE Hist Plot for Low-Dim
 
-```{r}
-plot_low_ipw <- data.frame(x=1:length(seed),ATE=ate_ipw_vec)
+```{r, warning=FALSE, fig.width=4.7, fig.height=3.3}
+plot_low_ipw <- data.frame(x=1:length(ate_ipw_vec),ATE=ate_ipw_vec)
 
+ate_ipw_vec <- ate_ipw_vec[which(ate_ipw_vec>5)]
 g_low <- ggplot(plot_low_ipw)+
   geom_histogram(aes(ATE))+
   labs(
@@ -520,7 +522,7 @@ cat("mean ATE = ",mean(ate_ipw_vec))
 cat("std ATE = ",sd(ate_ipw_vec))
 
 tm <- end_time - start_time
-cat("Time for IPW Low-Dim is: ")
+cat("Time for DRE Low-Dim is: ")
 tm
 ```
 
@@ -563,9 +565,9 @@ for (seednum in seed){
 
 The steps to calculate the ATE for high dimension data is exactly the same. The first part is for building linear regression models to predict outcomes and the second part is to calculate ATE.
 
-### 6.3 ATE Hist Plot for High-Dim
+### 6.5 ATE Hist Plot for High-Dim
 
-```{r}
+```{r, warning=FALSE, fig.width=4.7, fig.height=3.3}
 plot_low_ipw <- data.frame(x=1:length(seed),ATE=ate_ipw_vec)
 
 g_low <- ggplot(plot_low_ipw)+
@@ -584,7 +586,7 @@ cat("mean ATE = ",mean(ate_ipw_vec))
 cat("std ATE = ",sd(ate_ipw_vec))
 
 tm <- end_time - start_time
-cat("Time for IPW Low-Dim is: ")
+cat("Time for DRE High-Dim is: ")
 tm
 ```
 
