@@ -1,4 +1,4 @@
-# Project 4: Causal Inference
+# Project 4: Causal Inference Algorithms Evaluation
 
 ### [Project Description](doc/project4_desc.md)
 
