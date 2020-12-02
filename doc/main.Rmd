@@ -12,7 +12,27 @@ output:
 # GR5243 Fall 2020 Applied Data Science
 # Project 4 Causal Inference Algorithms Evaluation
 
-We are going to calculate ATE using three main methods, that is Propensity Matching, Inverse Propensity Weighting and Doubly Robust Estimation.
+Firstly, we introduce the definition of causal effects. Suppose we have a random sample of size N from a large population. For each unit i in the random sample, we use $T_i\in\{0,1\}$ to denote whether the unit i received the treatment of interest. Let $Y_i(0)$ indicates the outcome that the unit i was under control while $Y_i(1)$ indicates the outcome under treatment. For unit i the treatment effect is $Y_i(1) - Y_i(0)$. We are interested in the average effect of the treatment in the whole population (to simply the notation, we suppress subscript i for unit):
+$\Delta = E(Y_1 - Y_0) = E(Y_1) - E(Y_0)$
+
+Our group calculate ATE using Propensity Matching, Inverse Propensity Weighting and Doubly Robust Estimation along with L2 penalized logistic propensity score estimations.
+
+The statistics of the three algo implemented on low-Dim and high-Dim datasets follows:
+
+![summary](../figs/summary.png)
+
+To summarize our findings, Propensity Weighting is unstable and sensitive to thershold choosing, which in turn determine the total number of matching pairs. Also, it is the most time consuming algo.
+
+Inverse Propensity Weighting is a better algorithm. With no need to compute the pair-wise distance, it runs fast, but may be biased.
+
+Doubly Robust Estimation combines the predicted outcome from linear regression with propensity score to estimate the causal effect. Without combining, these two methods can be easily biased. Doubly Robust Estimation reduces the likelihood to be biased since only one of the 2 models need to be correctly specified to obtain unbiased estimator.
+
+And from the results formula, Doubly Robust Estimation performs the best in our experiment. The predicted ATE is closer to true ATE and the standard error of ATE is smaller.
+
+
+
+
+## Coding Part
 
 ## 1. Setup
 ```{r message=FALSE, warning=FALSE}
@@ -43,6 +63,15 @@ hx <- hdim[, -c(1,2)]
 
 ## 3. Calculate Propensity Score with L2 Ridge regression for Propensity Matching
 
+The logistic regression model represents the class-conditional probabilities through a linear function of the predictors:
+
+$logit[Pr(T=1|X)]=\beta_0+\beta_1x_1+...+\beta_px_p$
+$Pr(T=1|X)=\frac{1}{1+e^{-(\beta_0+\beta_1x_1+...+\beta_px_p)}}$
+
+To avoid overfitting of the logistic regression model, we introduce regularization term to decrease the model variance in the loss function Q. In order to achieve this, we modifying the loss function with a penalty term which effectively shrinks the estimates of the coefficients. In this case, the penalty term is L2 norm:
+
+$Q=-\frac{1}{n}\Sigma[y_i(\beta_0+\beta_1x_1+...+\beta_px_p)+log(1+exp(\beta_0+\beta_1x_1+...+\beta_px_p))]+\lambda\Sigma\beta_j^2$
+
 ```{r, warning=FALSE}
 seed <- c(0,2,3,5)
 start_time <- Sys.time()
@@ -72,6 +101,14 @@ p_score_list <- lapply(seed,p_score)
 ```
 
 ## 4. Propensity Matching
+
+The distance of Propensity Score is defined as:
+
+$D_{ij} = |e_i - e_j|$
+
+where $e_k$ is the propensity score for individual k
+
+We set up thresholds for matching and make pairs for data point in different groups which have distance below the threshold. Thus as the threshold increases, more pairs are matched, and it will converge to all data matched when threshold comes to 100 percent.
 
 ### 4.1 Distance calculated
 ```{r, warning=FALSE}
@@ -238,9 +275,12 @@ tm
 
 ```{r, figures-side, fig.show="hold", out.width="25%", warning=FALSE}
 
+ATE_ps_low <- vector("double")
 for (i in 1:4){
   ATE_low <- low_list[[i]]$ate
   pairs_low <- low_list[[i]]$pair
+  ATE_ps_low <- append(ATE_ps_low,ATE_low[40:60])
+  
   plot_low <- data.frame(x=seq,ATE=ATE_low,pairs=pairs_low)
   
   g_low <- ggplot(plot_low)+
@@ -261,14 +301,20 @@ for (i in 1:4){
     )
   print(match_low)
 }
+
+cat("mean ATE = ",mean(ATE_ps_low))
+cat("std ATE = ",sd(ATE_ps_low))
 ```
 
 ### 4.6 Plotting Part for High-Dim
 
 ```{r, fig.show="hold", out.width="25%", warning=FALSE}
+
+ATE_ps_high <- vector("double")
 for (i in ind_mat){
   ATE_high <- high_list[[i]]$ate
   pairs_high <- high_list[[i]]$pair
+  ATE_ps_high <- append(ATE_ps_high,ATE_high[40:60])
   
   plot_high <- data.frame(x=seq,ATE=ATE_high,pairs=pairs_high)
   
@@ -292,8 +338,11 @@ for (i in ind_mat){
   
 }
 
+cat("mean ATE = ",mean(ATE_ps_high))
+cat("std ATE = ",sd(ATE_ps_high))
 ```
 
+From the plots above, we find that the result is unstable, and fluctuates randomly. Thus, we want to find some stable algorithm to estimate ATE.
 
 ## 5. Inverse Propensity Weighting
 
@@ -387,7 +436,7 @@ tm
 start_time <- Sys.time()
 
 set.seed(0)
-seed <- sample(1:10000,100)
+seed <- sample(1:10000,50)
 
 ate_ipw_vec <- vector("double")
 for (seednum in seed){
@@ -505,9 +554,9 @@ The first chunk of this code is for building linear regression models based on o
 ### 6.3 ATE Hist Plot for Low-Dim
 
 ```{r, warning=FALSE, fig.width=4.7, fig.height=3.3}
+ate_ipw_vec <- ate_ipw_vec[which(ate_ipw_vec<5)]
 plot_low_ipw <- data.frame(x=1:length(ate_ipw_vec),ATE=ate_ipw_vec)
 
-ate_ipw_vec <- ate_ipw_vec[which(ate_ipw_vec>5)]
 g_low <- ggplot(plot_low_ipw)+
   geom_histogram(aes(ATE))+
   labs(
@@ -534,7 +583,7 @@ tm
 start_time <- Sys.time()
 
 set.seed(0)
-seed <- sample(1:10000,100)
+seed <- sample(1:10000,50)
 
 ate_ipw_vec <- vector("double")
 for (seednum in seed){
