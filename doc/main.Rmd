@@ -12,16 +12,28 @@ output:
 # GR5243 Fall 2020 Applied Data Science
 # Project 4 Causal Inference Algorithms Evaluation
 
-Firstly, we introduce the definition of causal effects. Suppose we have a random sample of size N from a large population. For each unit i in the random sample, we use $T_i\in\{0,1\}$ to denote whether the unit i received the treatment of interest. Let $Y_i(0)$ indicates the outcome that the unit i was under control while $Y_i(1)$ indicates the outcome under treatment. For unit i the treatment effect is $Y_i(1) - Y_i(0)$. We are interested in the average effect of the treatment in the whole population (to simply the notation, we suppress subscript i for unit):
-$\Delta = E(Y_1 - Y_0) = E(Y_1) - E(Y_0)$
+Firstly, we introduce the definition of causal effects. Suppose we have a random sample of size $N$ from a large population. For each unit $i$ in the random sample, we use $T_i\in\{0,1\}$ to denote whether the unit $i$ received the treatment of interest. Let $Y_i(0)$ indicates the outcome that the unit $i$ was under control while $Y_i(1)$ indicates the outcome under treatment. For unit $i$ the treatment effect is $Y_i(1) - Y_i(0)$. We are interested in the average effect of the treatment in the whole population (to simply the notation, we suppress subscript $i$ for unit):
+$$\Delta = E(Y_1 - Y_0) = E(Y_1) - E(Y_0)$$
 
 Our group calculate ATE using Propensity Matching, Inverse Propensity Weighting and Doubly Robust Estimation along with L2 penalized logistic propensity score estimations.
 
-The statistics of the three algo implemented on low-Dim and high-Dim datasets follows:
+The statistics of the three algorithms implemented on low-Dim and high-Dim datasets follows:
 
-![summary](../figs/summary.png)
+| **Comparison Standard** | **Propensity Score Matching** | **Inverse Propensity Weighting** | **Doubly Robust Estimation** |
+|:-------------|:-------:|:-------:|:-------:|
+| Complexity                  | $O(n^2)$ |   $O(n)$ |  $O(n)$  |
+| Low-Dim Running Time        | 13.03 sec| 20.40 sec| 21.01 sec|
+| Low-Dim ATE Mean            |  2.67    | 1.97     | 2.56     | 
+| Low-Dim ATE Standard Error  | 0.39     | 0.038    | 0.0013   |
+| High-Dim Running Time       | 1.76 min | 4.29 min | 4.45 min |
+| High-Dim ATE Mean           | -3.44    | -2.34    | -2.96    |
+| High-Dim ATE Standard Error | 0.076    | 0.027    | 0.004    |
 
-To summarize our findings, Propensity Weighting is unstable and sensitive to thershold choosing, which in turn determine the total number of matching pairs. Also, it is the most time consuming algo.
+: Side-by-side Summary Table
+
+<!-- ![summary](../figs/summary.png) -->
+
+To summarize our findings, Propensity Score Matching is unstable and sensitive to threshold choosing, which in turn determine the total number of matching pairs. Also, it has the highest complexity cost.
 
 Inverse Propensity Weighting is a better algorithm. With no need to compute the pair-wise distance, it runs fast, but may be biased.
 
@@ -65,12 +77,12 @@ hx <- hdim[, -c(1,2)]
 
 The logistic regression model represents the class-conditional probabilities through a linear function of the predictors:
 
-$logit[Pr(T=1|X)]=\beta_0+\beta_1x_1+...+\beta_px_p$
-$Pr(T=1|X)=\frac{1}{1+e^{-(\beta_0+\beta_1x_1+...+\beta_px_p)}}$
+$$logit[Pr(T=1|X)]=\beta_0+\beta_1x_1+\cdots+\beta_px_p$$
+$$Pr(T=1|X)=\frac{1}{1+e^{-(\beta_0+\beta_1x_1+\cdots+\beta_px_p)}}$$
 
 To avoid overfitting of the logistic regression model, we introduce regularization term to decrease the model variance in the loss function Q. In order to achieve this, we modifying the loss function with a penalty term which effectively shrinks the estimates of the coefficients. In this case, the penalty term is L2 norm:
 
-$Q=-\frac{1}{n}\Sigma[y_i(\beta_0+\beta_1x_1+...+\beta_px_p)+log(1+exp(\beta_0+\beta_1x_1+...+\beta_px_p))]+\lambda\Sigma\beta_j^2$
+$$Q=-\frac{1}{n}\sum[y_i(\beta_0+\beta_1x_1+...+\beta_px_p)+log(1+\exp(\beta_0+\beta_1x_1+...+\beta_px_p))]+\lambda\sum\beta_j^2$$
 
 ```{r, warning=FALSE}
 seed <- c(0,2,3,5)
@@ -104,9 +116,9 @@ p_score_list <- lapply(seed,p_score)
 
 The distance of Propensity Score is defined as:
 
-$D_{ij} = |e_i - e_j|$
+$$D_{ij} = |e_i - e_j|$$
 
-where $e_k$ is the propensity score for individual k
+where $e_k$ is the propensity score for individual $k$.
 
 We set up thresholds for matching and make pairs for data point in different groups which have distance below the threshold. Thus as the threshold increases, more pairs are matched, and it will converge to all data matched when threshold comes to 100 percent.
 
@@ -145,19 +157,19 @@ dist_mat_list <- lapply(p_score_list,dist_mat)
 
 end_time <- Sys.time()
 tm <- end_time - start_time
-cat("Time for Preparing is: ")
-tm
+cat("Time for Preparing is:", tm, "seconds.")
+
 ```
 
-### 4.2 Propensity Score Marching Function
+### 4.2 Propensity Score Matching Function
 
 ```{r, warning=FALSE}
 cal_neighbour <- function(index,df,thresh,y,A){
   dt_vec <- df[index,]
   ind_vec <- which(dt_vec<thresh)
-  ind_final=ind_vec[A[index]!=A[ind_vec]]
+  ind_final <- ind_vec[A[index]!=A[ind_vec]]
   
-  if (length(ind_final)==0){
+  if (length(ind_final) == 0){
     return(NA)
   }
   else{
@@ -182,30 +194,27 @@ get_ate_pair <- function(ind){
   ATE_low <- vector("double")
   pairs_low <- vector("double")
   for (percentage in seq){
-    
     threshold <- quantile(a,percentage)
     
-    
     n1_vec <- 1:nrow(dt1)
-    list_1 <- lapply(n1_vec,cal_neighbour,df=dt1,thresh = threshold,y=ly,A=ltr)
-    mean_list_1 <- lapply(n1_vec,function(x) unlist(list_1[[x]][1]))
+    list_1 <- lapply(n1_vec, cal_neighbour, df = dt1, thresh = threshold, y = ly, A = ltr)
+    mean_list_1 <- lapply(n1_vec, function(x) unlist(list_1[[x]][1]))
     mean_cal_1 <- unlist(mean_list_1)
-    neighbour_list_1 <- lapply(n1_vec,function(x) unlist(list_1[[x]][2]))
+    neighbour_list_1 <- lapply(n1_vec, function(x) unlist(list_1[[x]][2]))
     
-    df_1 <- (data.frame(Y=ly,A=ltr)
+    df_1 <- (data.frame(Y = ly, A = ltr)
              %>%mutate(ind = row_number())
-             %>%mutate(AAA=neighbour_list_1)
+             %>%mutate(AAA = neighbour_list_1)
              %>%mutate(mean_cal = mean_cal_1)
              %>%filter(!is.na(mean_cal))
              %>%mutate(ATE = (Y-mean_cal)*ifelse(A==0,-1,1))
-             
     )
     
     ATE_low <- append(ATE_low,mean(df_1$ATE))
     pairs_low <- append(pairs_low,sum(!is.na(unlist(neighbour_list_1)))/2)
   }
-  return(list(ate=ATE_low,pair=pairs_low))
   
+  return(list(ate=ATE_low,pair=pairs_low))
 }
 
 ind_mat <- 1:4
@@ -214,8 +223,7 @@ low_list <- lapply(ind_mat,get_ate_pair)
 
 end_time <- Sys.time()
 tm <- end_time - start_time
-cat("Time for Propensity Matching Low_Dim is: ")
-tm
+cat("Time for Propensity Matching Low_Dim is:", tm, "seconds.")
 ```
 
 ### 4.4 Matching High-Dim
@@ -231,26 +239,21 @@ get_ate_pair <- function(ind){
   ATE_high <- vector("double")
   pairs_high <- vector("double")
   
-  
-  
   for (percentage in seq){
-    
     threshold <- quantile(a_h,percentage)
     
-    
     n2_vec <- 1:nrow(dt2)
-    list_2 <- lapply(n2_vec,cal_neighbour,df=dt2,thresh = threshold,y=hy,A=htr)
+    list_2 <- lapply(n2_vec, cal_neighbour, df = dt2, thresh = threshold, y = hy, A = htr)
     mean_list_2 <- lapply(n2_vec,function(x) unlist(list_2[[x]][1]))
     mean_cal_2 <- unlist(mean_list_2)
     neighbour_list_2 <- lapply(n2_vec,function(x) unlist(list_2[[x]][2]))
     
-    df_2 <- (data.frame(Y=hy,A=htr)
+    df_2 <- (data.frame(Y = hy, A = htr)
              %>%mutate(ind = row_number())
-             %>%mutate(AAA=neighbour_list_2)
+             %>%mutate(AAA = neighbour_list_2)
              %>%mutate(mean_cal = mean_cal_2)
              %>%filter(!is.na(mean_cal))
              %>%mutate(ATE = (Y-mean_cal)*ifelse(A==0,-1,1))
-             
     )
     
     ATE_high <- append(ATE_high,mean(df_2$ATE))
@@ -258,7 +261,6 @@ get_ate_pair <- function(ind){
   }
   
   return(list(ate=ATE_high,pair=pairs_high))
-  
 }
 
 ind_mat <- 1:4
@@ -266,8 +268,7 @@ high_list <- lapply(ind_mat,get_ate_pair)
 
 end_time <- Sys.time()
 tm <- end_time - start_time
-cat("Time for Propensity Matching High_Dim is: ")
-tm
+cat("Time for Propensity Matching High_Dim is:", tm, "minutes.")
 
 ```
 
@@ -281,10 +282,10 @@ for (i in 1:4){
   pairs_low <- low_list[[i]]$pair
   ATE_ps_low <- append(ATE_ps_low,ATE_low[40:60])
   
-  plot_low <- data.frame(x=seq,ATE=ATE_low,pairs=pairs_low)
+  plot_low <- data.frame(x = seq, ATE = ATE_low, pairs = pairs_low)
   
-  g_low <- ggplot(plot_low)+
-    geom_point(aes(x,ATE))+
+  g_low <- ggplot(plot_low) +
+    geom_point(aes(x,ATE)) +
     labs(
       title = paste0("ATE V.S. threshold No.",i),
       x = "threshold",
@@ -292,8 +293,8 @@ for (i in 1:4){
     )
   print(g_low)
   
-  match_low <- ggplot(plot_low)+
-    geom_point(aes(x,pairs))+
+  match_low <- ggplot(plot_low) +
+    geom_point(aes(x,pairs)) +
     labs(
       title = paste0("Pairs V.S. threshold No.",i),
       x = "threshold",
@@ -302,8 +303,8 @@ for (i in 1:4){
   print(match_low)
 }
 
-cat("mean ATE = ",mean(ATE_ps_low))
-cat("std ATE = ",sd(ATE_ps_low))
+cat("mean ATE =",mean(ATE_ps_low))
+cat("std ATE =",sd(ATE_ps_low))
 ```
 
 ### 4.6 Plotting Part for High-Dim
@@ -316,10 +317,10 @@ for (i in ind_mat){
   pairs_high <- high_list[[i]]$pair
   ATE_ps_high <- append(ATE_ps_high,ATE_high[40:60])
   
-  plot_high <- data.frame(x=seq,ATE=ATE_high,pairs=pairs_high)
+  plot_high <- data.frame(x = seq, ATE = ATE_high, pairs = pairs_high)
   
-  g_high <- ggplot(plot_high)+
-    geom_point(aes(x,ATE))+
+  g_high <- ggplot(plot_high) +
+    geom_point(aes(x,ATE)) +
     labs(
       title = paste0("ATE V.S. threshold No.",i),
       x = "threshold",
@@ -338,8 +339,8 @@ for (i in ind_mat){
   
 }
 
-cat("mean ATE = ",mean(ATE_ps_high))
-cat("std ATE = ",sd(ATE_ps_high))
+cat("mean ATE =",mean(ATE_ps_high))
+cat("std ATE =",sd(ATE_ps_high))
 ```
 
 From the plots above, we find that the result is unstable, and fluctuates randomly. Thus, we want to find some stable algorithm to estimate ATE.
@@ -408,10 +409,10 @@ for (seednum in seed){
 ### 5.3 ATE Hist Plot for Low-Dim
 
 ```{r, warning=FALSE, fig.width=4.7, fig.height=3.3}
-plot_low_ipw <- data.frame(x=1:length(seed),ATE=ate_ipw_vec)
+plot_low_ipw <- data.frame(x = 1:length(seed), ATE = ate_ipw_vec)
 
-g_low <- ggplot(plot_low_ipw)+
-  geom_histogram(aes(ATE))+
+g_low <- ggplot(plot_low_ipw) +
+  geom_histogram(aes(ATE)) +
   labs(
     title = paste0("ATE Histogram"),
     x = "ATE",
@@ -422,12 +423,11 @@ print(g_low)
 end_time <- Sys.time()
 
 
-cat("mean ATE = ",mean(ate_ipw_vec))
-cat("std ATE = ",sd(ate_ipw_vec))
+cat("mean ATE =",mean(ate_ipw_vec))
+cat("std ATE =",sd(ate_ipw_vec))
 
 tm <- end_time - start_time
-cat("Time for IPW Low-Dim is: ")
-tm
+cat("Time for IPW Low-Dim is:", tm, "seconds.")
 ```
 
 ### 5.4 Calculating ATE for High-Dim with bootstrap
@@ -469,10 +469,10 @@ for (seednum in seed){
 ### 5.5 ATE Hist Plot for High-Dim
 
 ```{r, warning=FALSE, fig.width=4.7, fig.height=3.3}
-plot_low_ipw <- data.frame(x=1:length(seed),ATE=ate_ipw_vec)
+plot_low_ipw <- data.frame(x = 1:length(seed), ATE = ate_ipw_vec)
 
-g_high <- ggplot(plot_low_ipw)+
-  geom_histogram(aes(ATE))+
+g_high <- ggplot(plot_low_ipw) +
+  geom_histogram(aes(ATE)) +
   labs(
     title = paste0("ATE Histogram"),
     x = "ATE",
@@ -482,19 +482,19 @@ print(g_high)
 
 end_time <- Sys.time()
 
-cat("mean ATE = ",mean(ate_ipw_vec))
-cat("std ATE = ",sd(ate_ipw_vec))
+cat("mean ATE =",mean(ate_ipw_vec))
+cat("std ATE =",sd(ate_ipw_vec))
 
 tm <- end_time - start_time
-cat("Time for IPW High-Dim is: ")
-tm
+cat("Time for IPW High-Dim is:", tm, "minutes.")
 ```
 
 ## 6. Doubly Robust Estimation
 
 ### 6.1 Introduction of Doubly Robust Estimation
 
-Doubly Robust estimator has the formula as following : $\hat\Delta = N^{-1}\sum_{i=1}^{N}\frac{T_iY_i-(T_i-\hat e_i)\hat m_i(X_i)}{\hat e_i}-N^{-1}\sum_{i=1}^{N}\frac{(1-T_i)Y_i+(T_i-\hat e_i)\hat m_0(X_i)}{1-\hat e_i}$.
+Doubly Robust estimator has the formula as following:
+$$\hat\Delta = N^{-1}\sum_{i=1}^{N}\frac{T_iY_i-(T_i-\hat e_i)\hat m_i(X_i)}{\hat e_i}-N^{-1}\sum_{i=1}^{N}\frac{(1-T_i)Y_i+(T_i-\hat e_i)\hat m_0(X_i)}{1-\hat e_i}.$$
 
 Doubly Robust Estimation combines the predicted outcome from linear regression with propensity score to estimate the causal effect. Without combining, these two methods can be easily biased. Doubly Robust Estimation reduces the likelihood to be biased since only one of the 2 models need to be correctly specified to obtain unbiased estimator.
 
@@ -532,12 +532,12 @@ for (seednum in seed){
                    type = "response")
   low$ps <- psLow
   
-  low1 <- low[which(low$A=='1'),]
-  low0 <- low[which(low$A=='0'),]
-  lr_low1 <- glm(formula=Y~ .,data = low1)
-  lr_low0 <- glm(formula=Y~ .,data = low0)
-  low$m1 <- predict(lr_low1,low[,-c(1)])
-  low$m0 <- predict(lr_low0,low[,-c(1)])
+  low1 <- low[which(low$A == '1'),]
+  low0 <- low[which(low$A == '0'),]
+  lr_low1 <- glm(formula = Y ~ ., data = low1)
+  lr_low0 <- glm(formula = Y ~ ., data = low0)
+  low$m1 <- predict(lr_low1, low[,-c(1)])
+  low$m0 <- predict(lr_low0, low[,-c(1)])
   # Calculate
   ATE_low <- sum((low$A*low$Y-(low$A-low$ps)*low$m1)/low$ps)/dim(low)[1]-sum(((1-low$A)*low$Y+(low$A-low$ps)*low$m0)/(1-low$ps))/dim(low)[1]
   
@@ -549,16 +549,16 @@ for (seednum in seed){
 
 ```
 
-The first chunk of this code is for building linear regression models based on output(Y) and features(low1) for different treatment(A) values. The following part uses all the value we obtain before to calculate ATE.
+The first chunk of this code is for building linear regression models based on output(`Y`) and features(`low1`) for different treatment(`A`) values. The following part uses all the value we obtain before to calculate ATE.
 
 ### 6.3 ATE Hist Plot for Low-Dim
 
 ```{r, warning=FALSE, fig.width=4.7, fig.height=3.3}
-ate_ipw_vec <- ate_ipw_vec[which(ate_ipw_vec<5)]
-plot_low_ipw <- data.frame(x=1:length(ate_ipw_vec),ATE=ate_ipw_vec)
+ate_ipw_vec <- ate_ipw_vec[which(ate_ipw_vec < 5)]
+plot_low_ipw <- data.frame(x = 1:length(ate_ipw_vec), ATE = ate_ipw_vec)
 
-g_low <- ggplot(plot_low_ipw)+
-  geom_histogram(aes(ATE))+
+g_low <- ggplot(plot_low_ipw) +
+  geom_histogram(aes(ATE)) +
   labs(
     title = paste0("ATE Histogram"),
     x = "ATE",
@@ -569,12 +569,11 @@ print(g_low)
 end_time <- Sys.time()
 
 
-cat("mean ATE = ",mean(ate_ipw_vec))
-cat("std ATE = ",sd(ate_ipw_vec))
+cat("mean ATE =",mean(ate_ipw_vec))
+cat("std ATE =",sd(ate_ipw_vec))
 
 tm <- end_time - start_time
-cat("Time for DRE Low-Dim is: ")
-tm
+cat("Time for DRE Low-Dim is:", tm, "seconds.")
 ```
 
 ### 6.4 ATE calculated with Doubly Robust Estimation High-Dim
@@ -597,12 +596,12 @@ for (seednum in seed){
                     type = "response")
   high$ps <- psHigh
   
-  high1 <- high[which(high$A=='1'),]
-  high0 <- high[which(high$A=='0'),]
-  lr_high1 <- glm(formula=Y~ .,data = high1)
-  lr_high0 <- glm(formula=Y~ .,data = high0)
-  high$m1 <- predict(lr_high1,high[,-c(1)])
-  high$m0 <- predict(lr_high0,high[,-c(1)])
+  high1 <- high[which(high$A == '1'),]
+  high0 <- high[which(high$A == '0'),]
+  lr_high1 <- glm(formula = Y ~ ., data = high1)
+  lr_high0 <- glm(formula = Y ~ ., data = high0)
+  high$m1 <- predict(lr_high1, high[,-c(1)])
+  high$m0 <- predict(lr_high0, high[,-c(1)])
   # Calculate
   ATE_high <- sum((high$A*high$Y-(high$A-high$ps)*high$m1)/high$ps)/dim(high)[1]-sum(((1-high$A)*high$Y+(high$A-high$ps)*high$m0)/(1-high$ps))/dim(high)[1]
   
@@ -619,10 +618,10 @@ The steps to calculate the ATE for high dimension data is exactly the same. The 
 ### 6.5 ATE Hist Plot for High-Dim
 
 ```{r, warning=FALSE, fig.width=4.7, fig.height=3.3}
-plot_low_ipw <- data.frame(x=1:length(seed),ATE=ate_ipw_vec)
+plot_low_ipw <- data.frame(x = 1:length(seed), ATE = ate_ipw_vec)
 
-g_low <- ggplot(plot_low_ipw)+
-  geom_histogram(aes(ATE))+
+g_low <- ggplot(plot_low_ipw) +
+  geom_histogram(aes(ATE)) +
   labs(
     title = paste0("ATE Histogram"),
     x = "ATE",
@@ -633,12 +632,11 @@ print(g_low)
 end_time <- Sys.time()
 
 
-cat("mean ATE = ",mean(ate_ipw_vec))
-cat("std ATE = ",sd(ate_ipw_vec))
+cat("mean ATE =",mean(ate_ipw_vec))
+cat("std ATE =",sd(ate_ipw_vec))
 
 tm <- end_time - start_time
-cat("Time for DRE High-Dim is: ")
-tm
+cat("Time for DRE High-Dim is:", tm, "minutes.")
 ```
 
 
