@@ -445,6 +445,8 @@ tm
 
 ### 6.1 Introduction of Doubly Robust Estimation
 
+Doubly Robust estimator has the formula as following : $\hat\Delta = N^{-1}\sum_{i=1}^{N}\frac{T_iY_i-(T_i-\hat e_i)\hat m_i(X_i)}{\hat e_i}-N^{-1}\sum_{i=1}^{N}\frac{(1-T_i)Y_i+(T_i-\hat e_i)\hat m_0(X_i)}{1-\hat e_i}$.
+
 Doubly Robust Estimation combines the predicted outcome from linear regression with propensity score to estimate the causal effect. Without combining, these two methods can be easily biased. Doubly Robust Estimation reduces the likelihood to be biased since only one of the 2 models need to be correctly specified to obtain unbiased estimator.
 
 ```{r, warning=FALSE}
