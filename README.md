@@ -18,9 +18,9 @@ Term: Fall 2020
 
 + Zihan Chen implemented matching part of Propensity Matching algorithm, implemented bootstrap in IPW and DRE to generate plots. Organized the codes in main, prepared presentation material and presented in class.
 + Depeng Kong calculated propensity score based on L2 penalized logistic regression for every model, produced skeleton code for Propensity Matching, and finalized main file formatting.
-+ Yiran Lin studied and implemented Doubly Robust Estimation algorithm with PS based on L2 penalized logistic regression, wrote the description for DRE algorithm.
++ Yiran Lin studied and implemented Doubly Robust Estimation algorithm with PS based on L2 penalized logistic regression, wrote the description for DRE algorithm, helped in formatting the main file.
 + Wannian Lou cooperated with Henan Xu to finish the IPW algorithm.
-+ Henan Xu studied and implemented Inverse Propensity Weighting algorithm with PS based on L2 penalized logistic regression, wrote the description for IPW algorithm.
++ Henan Xu studied and implemented Inverse Propensity Weighting algorithm with PS based on L2 penalized logistic regression, wrote the description for IPW algorithm, helped in formatting the main file.
 
 Following [suggestions](http://nicercode.github.io/blog/2013-04-05-projects/) by [RICH FITZJOHN](http://nicercode.github.io/about/#Team) (@richfitz). This folder is orgarnized as follows.
 
